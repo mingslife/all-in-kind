@@ -4,7 +4,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: clusterrole-deployer
+  name: deployer
 rules:
 - apiGroups:
   - '*'
@@ -64,7 +64,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: clusterrole-debugger
+  name: debugger
 rules:
 - apiGroups:
   - '*'

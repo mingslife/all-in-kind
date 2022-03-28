@@ -205,6 +205,34 @@ kubectl apply -f clusterrole.yaml
 
 ![Sample Gitea](screenshots/sample-gitea.png)
 
+### 创建命名空间和服务账号
+
+```bash
+export NAMESPACE_NAME="sample-test"
+
+# 创建命名空间
+kubectl create namespace $NAMESPACE_NAME
+
+# 创建从私有仓库拉取镜像的凭证
+kubectl create secret docker-registry regcred \
+  --docker-server=http://registry.infra.svc.cluster.local:5000/v1/ \
+  --docker-username=docker \
+  --docker-password=$REGISTRY_PASSWORD \
+  -n $NAMESPACE_NAME
+
+# 创建调试和部署的服务账号
+kubectl create serviceaccount deployer -n $NAMESPACE_NAME
+kubectl create serviceaccount debugger -n $NAMESPACE_NAME
+
+# 将服务账号和对应的权限关联起来
+kubectl create rolebinding deployer --clusterrole=deployer --serviceaccount=$NAMESPACE_NAME:deployer -n $NAMESPACE_NAME
+kubectl create rolebinding debugger --clusterrole=debugger --serviceaccount=$NAMESPACE_NAME:debugger -n $NAMESPACE_NAME
+
+# 获取部署服务账号的口令
+export DEPLOYER_SECRET_NAME=$(kubectl get serviceaccount deployer -n $NAMESPACE_NAME -o jsonpath='{.secrets[0].name}')
+export DEPLOYER_TOKEN=$(kubectl get secret $DEPLOYER_SECRET_NAME -n $NAMESPACE_NAME -o jsonpath='{.data.token}' | base64 -d)
+```
+
 ### 配置流水线
 
 在浏览器地址栏里输入“[http://jenkins.localhost](http://jenkins.localhost)”回车进入到 Jenkins，点击左侧菜单里的“新建任务”，输入任务名称“sample”，选择“流水线”，点击“确定”进入到流水线配置，并按照下图进行信息填写并保存。
