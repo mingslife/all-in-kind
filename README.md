@@ -205,6 +205,14 @@ kubectl apply -f clusterrole.yaml
 
 ![Sample Gitea](screenshots/sample-gitea.png)
 
+创建完仓库之后，我们还要在 Gitea 上配置 Jenkins 的 Webhook，使得在我们推送项目代码的时候，自动触发构建流水线。
+
+我们在项目 Gitea 仓库页面右上角找到“设置”，点击之后选择“Web 钩子”，然后点击右侧“添加 Web 钩子”，选择“Gitea”。
+
+在“添加 Web 钩子”的表单中，在“目标 URL”中填入“[http://master.jenkins.svc.cluster.local:8080/generic-webhook-trigger/invoke?token=<Jenkins WebHook Trigger 的统一口令>](http://master.jenkins.svc.cluster.local:8080/generic-webhook-trigger/invoke)”。在“密钥文本”中填入触发项目构建的 Webhook 的项目独立口令（注意区分前面的统一口令，不是同一个），这里我设置的是“tri99er-s3cret-0f-sample”。在“分支过滤”中填入“{master,release*}”，意为仅在生产分支和测试分支（这里用的 git-flow 规范，了解详情请点击[这里](https://www.git-tower.com/learn/git/ebook/cn/command-line/advanced-topics/git-flow/)）有变动时才触发流水线构建。
+
+最后点击下面的“添加 Web 钩子”按钮即可完成 Webhook 的配置。
+
 ### 创建命名空间和服务账号
 
 ```bash
