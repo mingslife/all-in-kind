@@ -1,0 +1,52 @@
+# https://github.com/mingslife/all-in-kind/infra/chartmuseum.yaml
+# Created by Ming
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chartmuseum
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chartmuseum
+  template:
+    metadata:
+      labels:
+        app: chartmuseum
+    spec:
+      containers:
+      - name: chartmuseum
+        image: ghcr.io/helm/chartmuseum:v0.14.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: STORAGE
+          value: "local"
+        - name: STORAGE_LOCAL_ROOTDIR
+          value: "/charts"
+        - name: BASIC_AUTH_USER
+          value: "chartmuseum"
+        - name: BASIC_AUTH_PASS
+          value: "s3cret@chartmuseum"
+        volumeMounts:
+        - name: chartmuseum-data
+          mountPath: /charts
+      volumes:
+      - name: chartmuseum-data
+        hostPath:
+          path: /data/chartmuseum
+          type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: chartmuseum
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: chartmuseum

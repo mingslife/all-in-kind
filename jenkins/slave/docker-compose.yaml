@@ -1,0 +1,6 @@
+version: "2"
+
+services:
+  slave:
+    image: registry.localhost/slave-kubernetes:0.0.1
+    build: .

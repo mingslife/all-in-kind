@@ -1,0 +1,73 @@
+# https://github.com/mingslife/all-in-kind/gitea/gitea.yaml
+# Created by Ming
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea
+        image: gitea/gitea:1.16-rootless
+        ports:
+        - containerPort: 3000
+        - containerPort: 2222
+        volumeMounts:
+        - name: gitea-data
+          mountPath: /var/lib/gitea
+        - name: gitea-config
+          mountPath: /etc/gitea
+      volumes:
+      - name: gitea-data
+        hostPath:
+          path: /data/gitea/data
+          type: DirectoryOrCreate
+      - name: gitea-config
+        hostPath:
+          path: /data/gitea/config
+          type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea
+spec:
+  ports:
+  - name: web
+    port: 3000
+    targetPort: 3000
+  - name: ssh
+    port: 2222
+    targetPort: 2222
+  selector:
+    app: gitea
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea
+spec:
+  rules:
+  - host: "gitea.localhost"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: gitea
+            port:
+              number: 3000

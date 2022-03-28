@@ -1,0 +1,78 @@
+# https://github.com/mingslife/all-in-kind/infra/registry.yaml
+# Created by Ming
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+      - name: registry
+        image: registry:2.8
+        ports:
+        - containerPort: 5000
+        env:
+        - name: REGISTRY_AUTH
+          value: "htpasswd"
+        - name: REGISTRY_AUTH_HTPASSWD_PATH
+          value: "/auth/htpasswd"
+        - name: REGISTRY_AUTH_HTPASSWD_REALM
+          value: "Registry Realm"
+        volumeMounts:
+        - name: registry-data
+          mountPath: /var/lib/registry
+        - name: registry-auth
+          mountPath: /auth
+      volumes:
+      - name: registry-data
+        hostPath:
+          path: /data/registry/data
+          type: DirectoryOrCreate
+      - name: registry-auth
+        hostPath:
+          path: /data/registry/auth
+          type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+spec:
+  ports:
+  - port: 5000
+    targetPort: 5000
+  selector:
+    app: registry
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: registry
+  namespace: infra
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 4096m
+spec:
+  rules:
+  - host: "registry.localhost"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: registry
+            port:
+              number: 5000
