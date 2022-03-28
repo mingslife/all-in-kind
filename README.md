@@ -85,7 +85,7 @@ kubectl apply -f infra/chartmuseum.yaml -n infra
 kubectl apply -f infra/gitea.yaml -n infra
 ```
 
-等待 Gitea 的 Kubernetes 资源都创建完毕后，我们还需要用浏览器访问 [http://gitea.localhost/](http://gitea.localhost/)，也就是 Gitea 的首页，进行配置安装。
+等待 Gitea 的 Kubernetes 资源都创建完毕后，我们还需要用浏览器访问 [http://gitea.localhost](http://gitea.localhost)，也就是 Gitea 的首页，进行配置安装。
 
 ![Gitea](screenshots/gitea.png)
 
@@ -128,7 +128,7 @@ echo $JENKINS_PASSWORD
 
 等待插件安装完毕后，Jenkins 会要求我们创建管理员用户，这里为了方便，我们直接选择“使用 admin 账户继续”，用这种方式的话，管理员密码会沿用之前的 Jenkins 初始化管理员密码，我们也可以在此后重置它。
 
-接着 Jenkins 会提示我们配置 Jenkins URL，这个地方我们输入“http://jenkins.localhost”，也就是我们在 Jenkins Ingress 配置的域名，然后点击“保存并完成”。
+接着 Jenkins 会提示我们配置 Jenkins URL，这个地方我们输入“[http://jenkins.localhost](http://jenkins.localhost)”，也就是我们在 Jenkins Ingress 配置的域名，然后点击“保存并完成”。
 
 至此，Jenkins 的初始化配置过程已经完成，接下来我们需要配置的 Kubernetes 构建节点。
 
