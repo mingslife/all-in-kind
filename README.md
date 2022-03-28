@@ -257,7 +257,68 @@ FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/
 EOF
 
-git add index.html Dockerfile
+# 创建构建时的环境变量配置
+cat > .env << EOF
+export APP_NAME=sample
+export APP_VERSION=0.0.1
+EOF
+
+# 创建 Helm chart
+mkdir chart && cd chart
+helm create sample
+cat > sample/values.yaml << EOF
+replicaCount: 1
+
+image:
+  repository: registry.infra.svc.cluster.local:5000/gitea/sample
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets:
+- name: regcred
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: sample.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources: {}
+
+autoscaling:
+  enabled: false
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+EOF
+cd ..
+
+git add .
 git commit -m "Initial commit"
 
 # 推送项目代码
