@@ -89,6 +89,16 @@ kubectl apply -f infra/gitea.yaml -n infra
 
 ![Gitea](screenshots/gitea.png)
 
+为了后续 Jenkins 能够拉取到我们项目的代码，我们还需要创建一下我们的 Git SSH Key，我们可以通过如下命令进行生成：
+
+```bash
+ssh-keygen -t rsa -f jenkins_rsa_key -C jenkins -P ''
+```
+
+然后我们就会得到“jenkins_rsa_key”和“jenkins_rsa_key.pub”两个文件，分别存放我们的私钥和公钥。
+
+回到 Gitea 的页面中，我们点击右上角用户头像，选择“设置”，找到“SSH / GPG 密钥”并点击进入，然后点击“增加密钥”，“密钥名称”随意输入，我这边输入的是“jenkins”，然后在“密钥内容”里输入公钥“jenkins_rsa_key.pub”里的文件内容，最后点击“增加密钥”即可。
+
 ### 安装 Jenkins
 
 ```bash
@@ -124,17 +134,20 @@ echo $JENKINS_PASSWORD
 
 如果上面的步骤都顺利进行了，那么这个时候网页会自动跳转到 Jenkins 首页，我们在 Jenkins 首页左侧菜单里点击进入到“系统管理”，然后在“管理 Jenkins”页面里找到“插件管理”的模块并点击进入，然后点击“可选插件”选项页，然后找到“Kubernetes plugin”和“Generic Webhook Trigger Plugin”（方便在我们推送项目代码的时候自动触发构建过程）进行安装（可利用搜索去更快找到需要的插件），安装完毕之后按照提示重启我们的 Jenkins。
 
-待 Jenkins 重启完毕后，我们再一次进入到“管理 Jenkins”页面，找到“节点管理”的模块并点击进入，然后在左侧菜单里点击进入到“Configure Clouds”，并按照下图进行配置（注意，有些选项是默认隐藏起来的，需要我们点击详情进行详细配置）：
+待 Jenkins 重启完毕后，我们再一次进入到“管理 Jenkins”页面，找到“Manage Credentials”模块并点击进入。然后在“Stores scoped to Jenkins”列表里的域那一列，找到“全局”，点击进入“全局凭据”页面，点击左侧菜单里的“添加凭据”，我们需要通过这里新增以下两个凭据：
+
+1. Git SSH 密钥：类型为“SSH Username with private key”，描述可随意，我们填入“git”，“Username”填入“jenkins”，“Private Key”选择“Enter directly”，然后填入我们生成的 SSH 密钥（前面生成的“jenkins_rsa_key”里的内容）。
+2. Jenkins WebHook Trigger 的统一口令：类型为“Secret text”，描述可随意，我们填入“trigger”，然后填入我们自定的口令。
+
+我们再回到“管理 Jenkins”页面，找到“节点管理”的模块并点击进入，然后在左侧菜单里点击进入到“Configure Clouds”，并按照下图进行配置（注意，有些选项是默认隐藏起来的，需要我们点击详情进行详细配置）：
 
 ![Jenkins Kubernetes](screenshots/jenkins-kubernetes.png)
 
 填写完毕之后点击“Save”进行保存。
 
-TODO Jenkins Secret
-
 接下来我们回到终端上，准备 Jenkins Kubernetes 构建节点的 Docker 镜像构建。
 
-我们的构建过程中需要用到 [kaniko](https://github.com/GoogleContainerTools/kaniko)、[kubectl](https://github.com/kubernetes/kubectl)、[helm](https://github.com/helm/helm) 等工具，为了方便，我们选择构建我们自定义的构建节点的 Docker 镜像。镜像相关的文件我放在了“jenkins/slave”目录下，你可以进入到这个目录并进行镜像的构建。
+我们的构建过程中需要用到 [kaniko](https://github.com/GoogleContainerTools/kaniko)、[kubectl](https://github.com/kubernetes/kubectl)、[helm](https://github.com/helm/helm) 等工具，为了方便，我们选择构建我们自定义的构建节点的 Docker 镜像。镜像相关的文件（包括构建和部署的脚本）我放在了“jenkins/slave”目录下，你可以进入到这个目录并进行镜像的构建。
 
 ```bash
 cd jenkins/slave
@@ -180,6 +193,47 @@ service docker restart
 ```bash
 # 创建 Kubernetes 集群角色
 kubectl apply -f clusterrole.yaml
+```
+
+## 项目配置
+
+在这里，我们用一个简单的 Web 静态网站来做示范，并将该项目命名为“sample”。
+
+### 创建仓库
+
+在浏览器地址栏里输入“[http://gitea.localhost](http://gitea.localhost)”回车进入到 Gitea，点击右上角的加号，选择“创建仓库”，并按照下图进行信息填写并创建仓库。
+
+![Sample Gitea](screenshots/sample-gitea.png)
+
+### 配置流水线
+
+在浏览器地址栏里输入“[http://jenkins.localhost](http://jenkins.localhost)”回车进入到 Jenkins，点击左侧菜单里的“新建任务”，输入任务名称“sample”，选择“流水线”，点击“确定”进入到流水线配置，并按照下图进行信息填写并保存。
+
+![Sample Jenkins](screenshots/sample-jenkins.png)
+
+### 编写项目代码
+
+```bash
+# 克隆项目仓库
+git clone http://gitea.localhost/gitea/sample.git
+# 输入 Gitea 的账号密码
+
+cd sample
+
+# 由于在 Jenkins 流水线配置了只有在 release 分支推送了代码才会触发构建，所以我们需要切换到 release 分支
+git checkout release/0.0.1
+
+echo "Hello world" > index.html
+cat > Dockerfile << EOF
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/
+EOF
+
+git add index.html Dockerfile
+git commit -m "Initial commit"
+
+# 推送项目代码
+git push origin release/0.0.1
 ```
 
 ## 参考
