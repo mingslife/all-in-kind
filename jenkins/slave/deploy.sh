@@ -12,11 +12,7 @@ kubectl config set-context kubernetes \
 kubectl config use-context kubernetes
 
 if [ '$CHARTMUSEUM_URL' != '' ]; then
-  helm cm-push chart/$APP_NAME $CHARTMUSEUM_URL
+  helm cm-push -f chart/$APP_NAME $CHARTMUSEUM_URL
 fi
 
-if [ '$(helm list -l name=$APP_NAME | wc -l)' == '1' ]; then
-  helm install $APP_NAME chart/$APP_NAME
-else
-  helm upgrade $APP_NAME chart/$APP_NAME
-fi
+helm upgrade $APP_NAME chart/$APP_NAME --install
