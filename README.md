@@ -324,6 +324,15 @@ tolerations: []
 
 affinity: {}
 EOF
+
+cat > sample/Chart.yaml << EOF
+apiVersion: v2
+name: sample
+description: Sample Helm chart for Kubernetes
+type: application
+version: 0.1.0
+appVersion: "0.0.1"
+EOF
 cd ..
 
 git add .
